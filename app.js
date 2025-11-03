@@ -2,7 +2,6 @@ const express = require('express')
 const path = require('path')
 const { Pool } = require('pg')
 const bcrypt = require('bcrypt')
-const fs = require('fs')
 const jwt = require('jsonwebtoken')
 const cookieParser = require('cookie-parser')
 const multer = require('multer')
@@ -47,7 +46,10 @@ function requireAuthJWT(req, res, next) {
 // connect to the database
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false } // Neon requires SSL
+  ssl: { rejectUnauthorized: false }, // Neon requires SSL
+  max: 1, // Limit connections for serverless (Vercel)
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000
 });
 
 // (moved above) parse cookies + urlencoded
@@ -1033,14 +1035,49 @@ app.post('/login', async (req, res) => {
     return renderLoginWithError(res, 'Username/email and password are required', 400)
   }
   try {
-    const { rows } = await pool.query(
-      'SELECT id, username, email, password_hash FROM users_data WHERE username = $1 OR email = $1 LIMIT 1',
-      [username]
-    )
+    // Check if JWT_SECRET is set
+    if (!process.env.JWT_SECRET) {
+      console.error('JWT_SECRET is not set in environment variables')
+      return renderLoginWithError(res, 'Server configuration error', 500)
+    }
+    
+    // Check if database connection is available
+    if (!pool) {
+      console.error('Database pool is not initialized')
+      return renderLoginWithError(res, 'Database connection error', 500)
+    }
+    
+    // Test database connection with a timeout
+    let rows
+    try {
+      const queryResult = await Promise.race([
+        pool.query(
+          'SELECT id, username, email, password_hash FROM users_data WHERE username = $1 OR email = $1 LIMIT 1',
+          [username]
+        ),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Database query timeout')), 8000)
+        )
+      ])
+      rows = queryResult.rows
+    } catch (dbError) {
+      console.error('Database query error:', dbError)
+      if (dbError.message === 'Database query timeout') {
+        return renderLoginWithError(res, 'Database connection timeout. Please try again.', 500)
+      }
+      throw dbError // Re-throw to be caught by outer catch
+    }
     if (!rows.length) {
       return renderLoginWithError(res, 'Incorrect Username/Email', 401)
     }
     const user = rows[0]
+    
+    // Check if password_hash exists
+    if (!user.password_hash) {
+      console.error('User found but password_hash is missing')
+      return renderLoginWithError(res, 'User account error', 500)
+    }
+    
     const ok = await bcrypt.compare(password, user.password_hash)
     if (!ok) {
       return renderLoginWithError(res, 'Incorrect Password', 401)
@@ -1050,27 +1087,44 @@ app.post('/login', async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     )
+    
+    // Set secure cookie based on environment (true for HTTPS/production)
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL
     res.cookie('token', token, {
       httpOnly: true,
       sameSite: 'lax',
-      secure: false,
+      secure: isProduction, // true on Vercel (HTTPS), false on localhost
       maxAge: 1000 * 60 * 60 * 24 * 7
     })
     return res.redirect('/materials')
   } catch (err) {
     console.error('Login error:', err)
+    console.error('Error details:', {
+      message: err.message,
+      stack: err.stack,
+      code: err.code
+    })
     return renderLoginWithError(res, 'Internal server error', 500)
   }
 })
 
-const server = app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`)
-})
+// Test route (if needed)
+app.get('/users', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM users_data');
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Users route error:', err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
 
-// Export for Vercel serverless
+// Export for Vercel serverless (must be before app.listen)
 module.exports = app
 
-app.get('/users', async (req, res) => {
-  const result = await pool.query('SELECT * FROM neon_auth.users');
-  res.json(result.rows);
-});
+// Only listen if not on Vercel (Vercel handles the server)
+if (process.env.VERCEL !== '1' && !process.env.VERCEL_ENV) {
+  app.listen(port, () => {
+    console.log(`Example app listening on port ${port}`)
+  })
+}
