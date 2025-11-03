@@ -52,8 +52,20 @@ const pool = new Pool({
 
 // (moved above) parse cookies + urlencoded
 
-// serve static assets like styles.css
-app.use(express.static(__dirname))
+// Explicit route for CSS to ensure correct MIME type (must be before other routes)
+app.get('/styles.css', (req, res) => {
+  res.setHeader('Content-Type', 'text/css')
+  res.sendFile(path.join(__dirname, 'styles.css'))
+})
+
+// serve static assets like styles.css (must be before routes)
+app.use(express.static(__dirname, {
+  setHeaders: (res, path) => {
+    if (path.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css')
+    }
+  }
+}))
 
 app.get('/', (req, res) => {
   res.render('index')
@@ -1051,9 +1063,12 @@ app.post('/login', async (req, res) => {
   }
 })
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`Example app listening on port ${port}`)
 })
+
+// Export for Vercel serverless
+module.exports = app
 
 app.get('/users', async (req, res) => {
   const result = await pool.query('SELECT * FROM neon_auth.users');
