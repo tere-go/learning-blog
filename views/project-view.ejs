@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= project.title %> • Learn n8n</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css" rel="stylesheet">
+</head>
+<body>
+    <header>
+      <div class="brand">Learn-n8n</div>
+      <div class="right">
+        <button id="lang-toggle" class="lang-toggle" data-lang="en">EN</button>
+        <details>
+          <summary>Profile</summary>
+          <div class="menu">
+            <div class="profile-row">
+              <div class="avatar"></div>
+              <div>
+                <div class="name"><%= name %></div>
+                <div class="muted" id="profile-username"><%= username %></div>
+                <div class="tier" id="tier"><%= tierText %></div>
+                <div class="instruction" id="instruction"><%= instructionText %></div>
+                <div class="progress">
+                  <div class="bar"><div class="fill" id="progress-fill" data-width="<%= progressPercent %>"></div></div>
+                  <div class="small" id="progress-label"><%= progressLabel %></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </details>
+        <form class="logout" action="/logout" method="post">
+          <button class="btn secondary" type="submit">Logout</button>
+        </form>
+      </div>
+    </header>
+    
+    <div class="layout-container">
+      <aside class="sidebar">
+        <nav>
+          <div class="sidebar-group">
+            <h3 class="sidebar-title">Basic Materials</h3>
+            <ul class="sidebar-list" id="materials-sidebar">
+              <% if (materialsData.length === 0) { %>
+                <li><span class="sidebar-link" style="color: #94a3b8; cursor: default;">No materials yet</span></li>
+              <% } else { %>
+                <% materialsData.forEach(m => { %>
+                  <li><a href="/material/<%= m.id %>" class="sidebar-link"><%= m.title %></a></li>
+                <% }); %>
+              <% } %>
+            </ul>
+          </div>
+          
+          <div class="sidebar-group">
+            <h3 class="sidebar-title">Projects</h3>
+            <ul class="sidebar-list" id="projects-sidebar">
+              <% if (projectsData.length === 0) { %>
+                <li><span class="sidebar-link" style="color: #94a3b8; cursor: default;">No projects yet</span></li>
+              <% } else { %>
+                <% projectsData.forEach(p => { %>
+                  <li><a href="/project/<%= p.id %>" class="sidebar-link <%= project.id === p.id ? 'active' : '' %>"><%= p.title %></a></li>
+                <% }); %>
+              <% } %>
+            </ul>
+          </div>
+        </nav>
+      </aside>
+      
+      <main class="content-area">
+        <article class="material-content">
+          <header class="material-header">
+            <h1><%= project.title %></h1>
+            <div class="material-meta">
+              <span class="muted"><%= new Date(project.createdAt).toLocaleDateString() %></span>
+            </div>
+          </header>
+          
+          <div id="project-content-viewer" 
+               data-delta-en='<%- JSON.stringify(project.contentDelta) %>'
+               data-delta-kr='<%- JSON.stringify(project.contentDeltaKr || project.contentDelta) %>'></div>
+          
+          <div style="margin-top: 40px; text-align: center;">
+            <% if (project.isCompleted) { %>
+              <button id="mark-done-btn" class="btn" style="font-size: 16px; padding: 12px 24px; background: #10b981; cursor: default;" disabled>✓ Completed</button>
+            <% } else { %>
+              <button id="mark-done-btn" class="btn" style="font-size: 16px; padding: 12px 24px;">Mark as Done</button>
+            <% } %>
+          </div>
+        </article>
+      </main>
+    </div>
+    
+    <!-- Completion Modal -->
+    <% if (!project.isCompleted) { %>
+      <div id="completion-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000;">
+        <div style="background: white; padding: 32px; border-radius: 10px; max-width: 500px; width: 90%; box-shadow: 0 10px 30px rgba(0,0,0,0.2); text-align: center;">
+          <h2 style="margin: 0 0 16px; font-size: 24px;">🎉 Congratulations!</h2>
+          <p style="margin: 0 0 24px; font-size: 18px; color: #64748b;">You Are 1 Step Closer to Become a Automation Superhero!</p>
+          <button id="modal-close-btn" class="btn">Close</button>
+        </div>
+      </div>
+    <% } %>
+
+    <script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
+    <script>
+      // Render Quill Delta content
+      const quill = new Quill('#project-content-viewer', {
+        theme: 'bubble',
+        readOnly: true,
+        modules: {
+          toolbar: false
+        }
+      })
+      
+      // Set progress width
+      const progressFill = document.getElementById('progress-fill')
+      if (progressFill) {
+        progressFill.style.width = progressFill.getAttribute('data-width') + '%'
+      }
+      
+      // Language toggle functionality
+      const langToggle = document.getElementById('lang-toggle')
+      let currentLang = localStorage.getItem('preferredLang') || 'en'
+      
+      // Initialize language
+      function updateLanguage(lang) {
+        currentLang = lang
+        localStorage.setItem('preferredLang', lang)
+        langToggle.textContent = lang.toUpperCase()
+        langToggle.setAttribute('data-lang', lang)
+        
+        // Update content
+        const contentViewer = document.getElementById('project-content-viewer')
+        const deltaEn = JSON.parse(contentViewer.getAttribute('data-delta-en'))
+        const deltaKr = JSON.parse(contentViewer.getAttribute('data-delta-kr'))
+        quill.setContents(lang === 'kr' ? deltaKr : deltaEn)
+      }
+      
+      // Set initial language
+      updateLanguage(currentLang)
+      
+      // Handle toggle click
+      langToggle.addEventListener('click', () => {
+        const newLang = currentLang === 'en' ? 'kr' : 'en'
+        updateLanguage(newLang)
+      })
+      
+      // Render content from data attribute (will be updated by language toggle)
+      const contentViewer = document.getElementById('project-content-viewer')
+      const contentDelta = JSON.parse(contentViewer.getAttribute('data-delta-en'))
+      quill.setContents(contentDelta)
+      
+      // Project completion functionality
+      <% if (!project.isCompleted) { %>
+        const markDoneBtn = document.getElementById('mark-done-btn')
+        const completionModal = document.getElementById('completion-modal')
+        const modalCloseBtn = document.getElementById('modal-close-btn')
+        const projectId = '<%= project.id %>'
+        
+        function showCompletionModal() {
+          completionModal.style.display = 'flex'
+          completionModal.style.alignItems = 'center'
+          completionModal.style.justifyContent = 'center'
+          // Center the inner div
+          const modalInner = completionModal.querySelector('div')
+          if (modalInner) {
+            modalInner.style.margin = 'auto'
+          }
+        }
+        
+        function hideCompletionModal() {
+          completionModal.style.display = 'none'
+        }
+        
+        markDoneBtn.addEventListener('click', async () => {
+          try {
+            const r = await fetch('/project-complete', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ projectId })
+            })
+            
+            if (!r.ok) {
+              throw new Error('Failed to mark project as complete')
+            }
+            
+            // Show modal
+            showCompletionModal()
+          } catch (error) {
+            console.error('Error marking project as complete:', error)
+            alert('Failed to mark project as complete. Please try again.')
+          }
+        })
+        
+        modalCloseBtn.addEventListener('click', () => {
+          hideCompletionModal()
+          location.reload()
+        })
+        
+        // Close modal on background click
+        completionModal.addEventListener('click', (e) => {
+          if (e.target.id === 'completion-modal') {
+            hideCompletionModal()
+            location.reload()
+          }
+        })
+      <% } %>
+    </script>
+</body>
+</html>
+

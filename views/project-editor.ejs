@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Create Project • Learn n8n</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css" rel="stylesheet">
+    
+  </head>
+  <body>
+    <main class="editor-wrap">
+        <h3>Write a New Project</h3>
+      <div class="row">
+        <input class="title" id="project-title" placeholder="Project title" />
+        <button class="btn" id="project-save">Save</button>
+      </div>
+      <div id="project-toolbar">
+        <span class="ql-formats">
+          <select class="ql-header"></select>
+          <button class="ql-bold"></button>
+          <button class="ql-italic"></button>
+          <button class="ql-underline"></button>
+        </span>
+        <span class="ql-formats">
+          <button class="ql-list" value="ordered"></button>
+          <button class="ql-list" value="bullet"></button>
+          <button class="ql-link"></button>
+          <button class="ql-image"></button>
+          <button class="ql-video"></button>
+        </span>
+      </div>
+      <div id="project-editor"></div>
+      <p class="error" id="project-editor-error" aria-live="polite"></p>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
+    <script>
+      const quill = new Quill('#project-editor', {
+        theme: 'snow',
+        modules: {
+          toolbar: {
+            container: '#project-toolbar',
+            handlers: {
+              image: async function() {
+                const input = document.createElement('input')
+                input.type = 'file'
+                input.accept = 'image/*'
+                input.onchange = async () => {
+                  const file = input.files && input.files[0]
+                  if (!file) return
+                  const form = new FormData()
+                  form.append('file', file)
+                  try {
+                    const r = await fetch('/upload', { method: 'POST', body: form })
+                    if (!r.ok) {
+                      let msg = 'Upload failed'
+                      try { const err = await r.json(); msg = err.detail || err.error || msg } catch {}
+                      throw new Error(msg)
+                    }
+                    const ct = r.headers.get('content-type') || ''
+                    if (!ct.includes('application/json')) throw new Error('Upload failed: not authenticated')
+                    const { url, directUrl } = await r.json()
+                    const range = quill.getSelection(true)
+                    quill.insertEmbed(range.index, 'image', (directUrl || url), 'user')
+                  } catch (e) {
+                    document.getElementById('project-editor-error').textContent = String(e.message || 'Image upload failed')
+                  }
+                }
+                input.click()
+              }
+            }
+          }
+        }
+      })
+
+      document.getElementById('project-save').onclick = async () => {
+        const title = document.getElementById('project-title').value.trim()
+        if (!title) {
+          document.getElementById('project-editor-error').textContent = 'Title is required'
+          return
+        }
+        const delta = quill.getContents()
+        
+        console.log('contentDelta JSON:', JSON.stringify(delta))
+        try {
+          const r = await fetch('/project-editor', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, contentDelta: delta })
+          })
+          if (!r.ok) {
+            let msg = 'Save failed'
+            try { const err = await r.json(); msg = err.error || msg } catch {}
+            throw new Error(msg)
+          }
+          const ct2 = r.headers.get('content-type') || ''
+          if (!ct2.includes('application/json')) throw new Error('Save failed: not authenticated')
+          location.href = '/admin-dashboard'
+        } catch (e) {
+          document.getElementById('project-editor-error').textContent = String(e.message || 'Failed to save project')
+        }
+      }
+    </script>
+  </body>
+  </html>
+

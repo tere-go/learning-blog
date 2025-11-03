@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Materials • Learn n8n</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <header>
+      <div class="brand">Learn-n8n</div>
+      <div class="right">
+        <button id="lang-toggle" class="lang-toggle" data-lang="en">EN</button>
+        <details>
+          <summary>Profile</summary>
+          <div class="menu">
+            <div class="profile-row">
+              <div class="avatar"></div>
+              <div>
+                <div class="name"><%= name %></div>
+                <div class="muted" id="profile-username"><%= username %></div>
+                <div class="tier" id="tier"><%= tierText %></div>
+                <div class="instruction small" id="instruction"><%= instructionText %></div>
+                <div class="progress">
+                  <div class="bar"><div class="fill" id="progress-fill" data-width="<%= progressPercent %>"></div></div>
+                  <div class="small" id="progress-label"><%= progressLabel %></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </details>
+        <form class="logout" action="/logout" method="post">
+          <button class="btn secondary" type="submit">Logout</button>
+        </form>
+      </div>
+    </header>
+    
+    <div class="layout-container">
+      <aside class="sidebar">
+        <nav>
+          <div class="sidebar-group">
+            <h3 class="sidebar-title">Basic Materials</h3>
+            <ul class="sidebar-list" id="materials-sidebar">
+              <% if (materialsData.length === 0) { %>
+                <li><span class="sidebar-link" style="color: #94a3b8; cursor: default;">No materials yet</span></li>
+              <% } else { %>
+                <% materialsData.forEach(m => { %>
+                  <li><a href="/material/<%= m.id %>" class="sidebar-link"><%= m.title %></a></li>
+                <% }); %>
+              <% } %>
+            </ul>
+          </div>
+          
+          <div class="sidebar-group">
+            <h3 class="sidebar-title">Projects</h3>
+            <ul class="sidebar-list" id="projects-sidebar">
+              <% if (projectsData.length === 0) { %>
+                <li><span class="sidebar-link" style="color: #94a3b8; cursor: default;">No projects yet</span></li>
+              <% } else { %>
+                <% if (!basics) { %>
+                  <li><span class="sidebar-link" style="color: #94a3b8; cursor: default; opacity: 0.5;">Complete basics to unlock projects</span></li>
+                  <% projectsData.forEach(p => { %>
+                    <li><span class="sidebar-link" style="color: #94a3b8; cursor: not-allowed; opacity: 0.5;"><%= p.title %></span></li>
+                  <% }); %>
+                <% } else { %>
+                  <% projectsData.forEach(p => { %>
+                    <li><a href="/project/<%= p.id %>" class="sidebar-link"><%= p.title %></a></li>
+                  <% }); %>
+                <% } %>
+              <% } %>
+            </ul>
+          </div>
+        </nav>
+      </aside>
+      
+      <main class="content-area">
+        <!-- Main content goes here -->
+      </main>
+    </div>
+    
+    <script>
+      // Set progress bar width from data attribute
+      const progressFill = document.getElementById('progress-fill')
+      if (progressFill) {
+        progressFill.style.width = progressFill.getAttribute('data-width') + '%'
+      }
+      
+      // Language toggle functionality (for consistency across pages)
+      const langToggle = document.getElementById('lang-toggle')
+      if (langToggle) {
+        let currentLang = localStorage.getItem('preferredLang') || 'en'
+        
+        function updateLanguage(lang) {
+          currentLang = lang
+          localStorage.setItem('preferredLang', lang)
+          langToggle.textContent = lang.toUpperCase()
+          langToggle.setAttribute('data-lang', lang)
+        }
+        
+        updateLanguage(currentLang)
+        
+        langToggle.addEventListener('click', () => {
+          const newLang = currentLang === 'en' ? 'kr' : 'en'
+          updateLanguage(newLang)
+        })
+      }
+    </script>
+</body>
+</html>
+

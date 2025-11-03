@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Login • Learn n8n</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <main class="hero">
+      <div class="card">
+        <h1>Join the League!</h1>
+        <p class="sub">Create an account to start learning for free.</p>
+        <form class="form" action="/signup" method="post">
+            <div class="field">
+                <label for="name">Name</label>
+                <input id="name" name="name" type="text" placeholder="Your name" required>
+              </div>   
+          <div class="field">
+            <label for="email">Email</label>
+            <input id="email" name="email" type="text" placeholder="Your Email" required>
+          </div>
+          <div class="field">
+            <label for="username">Username</label>
+            <input id="username" name="username" type="text" placeholder="Your username" required>
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password" placeholder="••••••••" required>
+            <p>Min. 8 letters</p>
+          </div>
+          <div class="field">
+            <label for="confirm-password">Confirm Password</label>
+            <input id="confirm-password" name="confirm-password" type="password" placeholder="••••••••" required>
+          </div>
+        <p class="error" id="password-error" aria-live="polite"></p>
+        <p class="error" id="signup-error" aria-live="polite"><%= typeof error !== 'undefined' ? error : '' %></p>
+          <div class="row">
+            <button class="btn" type="submit">Sign Up</button>
+            <a class="btn secondary" href="/login">Already have an account?</a>
+          </div>
+        </form>
+      </div>
+    </main>
+  </body>
+  <script>
+    // Validate that confirm password matches password and block submit if not
+    (function () {
+      const form = document.querySelector('form.form')
+      const passwordEl = document.getElementById('password')
+      const confirmEl = document.getElementById('confirm-password')
+      const messageEl = document.getElementById('password-error')
+      if (!form || !passwordEl || !confirmEl || !messageEl) return
+      function validate() {
+        const match = passwordEl.value === confirmEl.value
+        messageEl.textContent = match ? '' : 'Passwords do not match'
+        return match
+      }
+      passwordEl.addEventListener('input', validate)
+      confirmEl.addEventListener('input', validate)
+      form.addEventListener('submit', function (e) {
+        if (!validate()) e.preventDefault()
+      })
+    })()
+  </script>
+  </html>
+

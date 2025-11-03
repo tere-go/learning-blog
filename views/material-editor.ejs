@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Write • Learn n8n</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css" rel="stylesheet">
+    
+  </head>
+  <body>
+    <main class="editor-wrap">
+        <h3>Write a New Material</h3>
+      <div class="row">
+        <input class="title" id="material-title" placeholder="Post title" />
+        <button class="btn" id="material-save">Save</button>
+      </div>
+      <div id="material-toolbar">
+        <span class="ql-formats">
+          <select class="ql-header"></select>
+          <button class="ql-bold"></button>
+          <button class="ql-italic"></button>
+          <button class="ql-underline"></button>
+        </span>
+        <span class="ql-formats">
+          <button class="ql-list" value="ordered"></button>
+          <button class="ql-list" value="bullet"></button>
+          <button class="ql-link"></button>
+          <button class="ql-image"></button>
+          <button class="ql-video"></button>
+        </span>
+      </div>
+      <div id="material-editor"></div>
+      <p class="error" id="material-editor-error" aria-live="polite"></p>
+      
+      <h4 style="margin-top: 32px; margin-bottom: 12px;">Quiz Questions (Optional)</h4>
+      <div id="quiz-section">
+        <div class="quiz-question" data-question="0">
+          <label class="quiz-label">Question 1</label>
+          <input type="text" class="quiz-q-input" placeholder="Enter question text" />
+          <div class="quiz-options">
+            <label class="option-row">
+              <input type="radio" name="q0-correct" value="0" class="quiz-correct" />
+              <input type="text" class="quiz-option" placeholder="Option 1" />
+            </label>
+            <label class="option-row">
+              <input type="radio" name="q0-correct" value="1" class="quiz-correct" />
+              <input type="text" class="quiz-option" placeholder="Option 2" />
+            </label>
+            <label class="option-row">
+              <input type="radio" name="q0-correct" value="2" class="quiz-correct" />
+              <input type="text" class="quiz-option" placeholder="Option 3" />
+            </label>
+            <label class="option-row">
+              <input type="radio" name="q0-correct" value="3" class="quiz-correct" />
+              <input type="text" class="quiz-option" placeholder="Option 4" />
+            </label>
+          </div>
+        </div>
+        <div class="quiz-question" data-question="1">
+          <label class="quiz-label">Question 2</label>
+          <input type="text" class="quiz-q-input" placeholder="Enter question text" />
+          <div class="quiz-options">
+            <label class="option-row">
+              <input type="radio" name="q1-correct" value="0" class="quiz-correct" />
+              <input type="text" class="quiz-option" placeholder="Option 1" />
+            </label>
+            <label class="option-row">
+              <input type="radio" name="q1-correct" value="1" class="quiz-correct" />
+              <input type="text" class="quiz-option" placeholder="Option 2" />
+            </label>
+            <label class="option-row">
+              <input type="radio" name="q1-correct" value="2" class="quiz-correct" />
+              <input type="text" class="quiz-option" placeholder="Option 3" />
+            </label>
+            <label class="option-row">
+              <input type="radio" name="q1-correct" value="3" class="quiz-correct" />
+              <input type="text" class="quiz-option" placeholder="Option 4" />
+            </label>
+          </div>
+        </div>
+        <div class="quiz-question" data-question="2">
+          <label class="quiz-label">Question 3</label>
+          <input type="text" class="quiz-q-input" placeholder="Enter question text" />
+          <div class="quiz-options">
+            <label class="option-row">
+              <input type="radio" name="q2-correct" value="0" class="quiz-correct" />
+              <input type="text" class="quiz-option" placeholder="Option 1" />
+            </label>
+            <label class="option-row">
+              <input type="radio" name="q2-correct" value="1" class="quiz-correct" />
+              <input type="text" class="quiz-option" placeholder="Option 2" />
+            </label>
+            <label class="option-row">
+              <input type="radio" name="q2-correct" value="2" class="quiz-correct" />
+              <input type="text" class="quiz-option" placeholder="Option 3" />
+            </label>
+            <label class="option-row">
+              <input type="radio" name="q2-correct" value="3" class="quiz-correct" />
+              <input type="text" class="quiz-option" placeholder="Option 4" />
+            </label>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
+    <script>
+      const quill = new Quill('#material-editor', {
+        theme: 'snow',
+        modules: {
+          toolbar: {
+            container: '#material-toolbar',
+            handlers: {
+              image: async function() {
+                const input = document.createElement('input')
+                input.type = 'file'
+                input.accept = 'image/*'
+                input.onchange = async () => {
+                  const file = input.files && input.files[0]
+                  if (!file) return
+                  const form = new FormData()
+                  form.append('file', file)
+                  try {
+                    const r = await fetch('/upload', { method: 'POST', body: form })
+                    if (!r.ok) {
+                      let msg = 'Upload failed'
+                      try { const err = await r.json(); msg = err.detail || err.error || msg } catch {}
+                      throw new Error(msg)
+                    }
+                    const ct = r.headers.get('content-type') || ''
+                    if (!ct.includes('application/json')) throw new Error('Upload failed: not authenticated')
+                    const { url, directUrl } = await r.json()
+                    const range = quill.getSelection(true)
+                    quill.insertEmbed(range.index, 'image', (directUrl || url), 'user')
+                  } catch (e) {
+                    document.getElementById('material-editor-error').textContent = String(e.message || 'Image upload failed')
+                  }
+                }
+                input.click()
+              }
+            }
+          }
+        }
+      })
+
+      document.getElementById('material-save').onclick = async () => {
+        const title = document.getElementById('material-title').value.trim()
+        if (!title) {
+          document.getElementById('material-editor-error').textContent = 'Title is required'
+          return
+        }
+        const delta = quill.getContents()
+        
+        // Collect quiz questions
+        const quizQuestions = []
+        for (let i = 0; i < 3; i++) {
+          const questionEl = document.querySelector(`.quiz-question[data-question="${i}"]`)
+          if (!questionEl) continue
+          const questionText = questionEl.querySelector('.quiz-q-input').value.trim()
+          if (!questionText) continue // Skip empty questions
+          
+          const options = []
+          const optionInputs = questionEl.querySelectorAll('.quiz-option')
+          let correctIndex = null
+          const correctRadio = questionEl.querySelector('.quiz-correct:checked')
+          
+          optionInputs.forEach((opt, idx) => {
+            const text = opt.value.trim()
+            if (text) options.push(text)
+            if (correctRadio && correctRadio.value == idx) correctIndex = idx
+          })
+          
+          if (options.length >= 2 && correctIndex !== null) {
+            quizQuestions.push({
+              question: questionText,
+              options: options,
+              correctAnswer: correctIndex
+            })
+          }
+        }
+        
+        console.log('contentDelta JSON:', JSON.stringify(delta))
+        console.log('Quiz questions:', quizQuestions)
+        try {
+          const r = await fetch('/material-editor', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, contentDelta: delta, quizQuestions })
+          })
+          if (!r.ok) {
+            let msg = 'Save failed'
+            try { const err = await r.json(); msg = err.error || msg } catch {}
+            throw new Error(msg)
+          }
+          const ct2 = r.headers.get('content-type') || ''
+          if (!ct2.includes('application/json')) throw new Error('Save failed: not authenticated')
+          location.href = '/admin-dashboard'
+        } catch (e) {
+          document.getElementById('material-editor-error').textContent = String(e.message || 'Failed to save post')
+        }
+      }
+    </script>
+  </body>
+  </html>
+

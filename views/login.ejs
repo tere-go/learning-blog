@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Login • Learn n8n</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <main class="hero">
+      <div class="card">
+        <h1>Welcome Learner!</h1>
+        <p class="sub">Log in to start learning.</p>
+        <form class="form" action="/login" method="post">
+          <div class="field">
+            <label for="username">Username or Email</label>
+            <input id="username" name="username" type="text" placeholder="Your username" required>
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password" placeholder="••••••••" required>
+          </div>
+          <div class="row">
+            <button class="btn" type="submit">Log In</button>
+            <a class="btn secondary" href="/signup">Don't have an account?</a>
+          </div>
+        </form>
+        <p class="error" id="login-error" aria-live="polite"><%= typeof error !== 'undefined' ? error : '' %></p>
+      </div>
+    </main>
+  </body>
+  </html>
+
