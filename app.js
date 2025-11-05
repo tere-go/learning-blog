@@ -1047,26 +1047,10 @@ app.post('/login', async (req, res) => {
       return renderLoginWithError(res, 'Database connection error', 500)
     }
     
-    // Test database connection with a timeout
-    let rows
-    try {
-      const queryResult = await Promise.race([
-        pool.query(
-          'SELECT id, username, email, password_hash FROM users_data WHERE username = $1 OR email = $1 LIMIT 1',
-          [username]
-        ),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Database query timeout')), 8000)
-        )
-      ])
-      rows = queryResult.rows
-    } catch (dbError) {
-      console.error('Database query error:', dbError)
-      if (dbError.message === 'Database query timeout') {
-        return renderLoginWithError(res, 'Database connection timeout. Please try again.', 500)
-      }
-      throw dbError // Re-throw to be caught by outer catch
-    }
+    const { rows } = await pool.query(
+      'SELECT id, username, email, password_hash FROM users_data WHERE username = $1 OR email = $1 LIMIT 1',
+      [username]
+    )
     if (!rows.length) {
       return renderLoginWithError(res, 'Incorrect Username/Email', 401)
     }
@@ -1099,11 +1083,6 @@ app.post('/login', async (req, res) => {
     return res.redirect('/materials')
   } catch (err) {
     console.error('Login error:', err)
-    console.error('Error details:', {
-      message: err.message,
-      stack: err.stack,
-      code: err.code
-    })
     return renderLoginWithError(res, 'Internal server error', 500)
   }
 })

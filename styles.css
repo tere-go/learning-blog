@@ -121,8 +121,48 @@ header {
   padding: 14px 18px;
   border-bottom: 1px solid #e2e8f0;
 }
+.brand-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 .brand { font-weight: 800; color: #0f172a; letter-spacing: -0.02em; }
 .right { display: flex; align-items: center; gap: 12px; }
+
+/* Hamburger menu button */
+.sidebar-toggle {
+  display: none;
+  flex-direction: column;
+  justify-content: space-around;
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  z-index: 10001;
+}
+
+.sidebar-toggle span {
+  width: 24px;
+  height: 2px;
+  background: #0f172a;
+  border-radius: 2px;
+  transition: all 0.3s ease;
+  transform-origin: center;
+}
+
+.sidebar-toggle.active span:nth-child(1) {
+  transform: rotate(45deg) translate(6px, 6px);
+}
+
+.sidebar-toggle.active span:nth-child(2) {
+  opacity: 0;
+}
+
+.sidebar-toggle.active span:nth-child(3) {
+  transform: rotate(-45deg) translate(6px, -6px);
+}
 .lang-toggle {
   padding: 6px 12px;
   border: 1px solid #e2e8f0;
@@ -449,6 +489,243 @@ table tbody tr:hover {
   border: 1px solid #e2e8f0;
   border-radius: 6px;
   font-size: 13px;
+}
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+  /* Header adjustments */
+  header {
+    padding: 12px 14px;
+    flex-wrap: wrap;
+  }
+  .brand {
+    font-size: 14px;
+  }
+  .right {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .lang-toggle {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  .btn.secondary {
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+  summary {
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+  
+  /* Profile menu adjustments */
+  .menu {
+    right: 0;
+    left: 0;
+    min-width: auto;
+    max-width: 100%;
+    margin: 0 14px;
+  }
+  
+  /* Show hamburger menu on mobile */
+  .sidebar-toggle {
+    display: flex;
+  }
+  
+  /* Layout container - stack vertically on mobile */
+  .layout-container {
+    flex-direction: column;
+    min-height: auto;
+    position: relative;
+  }
+  
+  /* Sidebar - hidden by default on mobile, shown as overlay when toggled */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    max-width: 85vw;
+    height: 100vh;
+    background: #f8fafc;
+    border-right: 1px solid #e2e8f0;
+    padding: 60px 0 20px;
+    overflow-y: auto;
+    z-index: 10000;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .sidebar.sidebar-open {
+    transform: translateX(0);
+  }
+  
+  /* Overlay effect when sidebar is open */
+  body.sidebar-open::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    pointer-events: none;
+  }
+  
+  body.sidebar-open .sidebar {
+    z-index: 10000;
+  }
+  
+  .sidebar nav {
+    display: block;
+    padding: 0;
+  }
+  
+  .sidebar-group {
+    margin-bottom: 32px;
+    padding: 0 20px;
+  }
+  
+  .sidebar-title {
+    margin: 0 0 12px 0;
+    font-size: 13px;
+  }
+  
+  .sidebar-link {
+    padding: 10px 20px;
+    font-size: 14px;
+    white-space: normal;
+  }
+  
+  /* Prevent body scroll when sidebar is open */
+  body.sidebar-open {
+    overflow: hidden;
+  }
+  
+  /* Content area */
+  .content-area {
+    padding: 16px;
+    min-height: auto;
+  }
+  
+  /* Material/Project view adjustments */
+  .material-content {
+    padding: 0;
+  }
+  
+  .material-header {
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+  }
+  
+  .material-header h1 {
+    font-size: 24px;
+  }
+  
+  .material-meta {
+    flex-wrap: wrap;
+    font-size: 13px;
+  }
+  
+  #material-content-viewer, #project-content-viewer {
+    margin-bottom: 24px;
+  }
+  
+  #material-content-viewer .ql-editor, #project-content-viewer .ql-editor {
+    font-size: 15px;
+  }
+  
+  .quiz-section {
+    margin-top: 32px;
+    padding-top: 24px;
+  }
+  
+  .quiz-section h2 {
+    font-size: 20px;
+    margin-bottom: 16px;
+  }
+  
+  .quiz-item {
+    padding: 16px;
+    margin-bottom: 20px;
+  }
+  
+  .quiz-item h3 {
+    font-size: 16px;
+    margin-bottom: 12px;
+  }
+  
+  /* Admin dashboard */
+  .admin-wrap {
+    padding: 16px;
+    margin: 16px auto;
+  }
+  
+  table {
+    font-size: 13px;
+  }
+  
+  table th,
+  table td {
+    padding: 8px 10px;
+  }
+  
+  /* Editor */
+  .editor-wrap {
+    padding: 0 14px;
+  }
+  
+  #material-editor, #project-editor {
+    height: 300px;
+  }
+}
+
+/* Very small screens */
+@media (max-width: 480px) {
+  header {
+    padding: 10px 12px;
+  }
+  
+  .brand {
+    font-size: 13px;
+  }
+  
+  .right {
+    gap: 6px;
+  }
+  
+  .lang-toggle {
+    padding: 5px 8px;
+    font-size: 11px;
+  }
+  
+  .btn.secondary {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+  
+  .sidebar {
+    width: 260px;
+    max-width: 90vw;
+  }
+  
+  .sidebar-group {
+    padding: 0 16px;
+  }
+  
+  .content-area {
+    padding: 12px;
+  }
+  
+  .material-header h1 {
+    font-size: 20px;
+  }
+  
+  .quiz-item {
+    padding: 12px;
+  }
 }
 
 

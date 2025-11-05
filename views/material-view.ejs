@@ -9,7 +9,14 @@
 </head>
 <body>
     <header>
-      <div class="brand">Learn-n8n</div>
+      <div class="brand-container">
+        <button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle sidebar">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        <div class="brand">Learn-n8n</div>
+      </div>
       <div class="right">
         <button id="lang-toggle" class="lang-toggle" data-lang="en">EN</button>
         <details>
@@ -155,6 +162,48 @@
       const progressFill = document.getElementById('progress-fill')
       if (progressFill) {
         progressFill.style.width = progressFill.getAttribute('data-width') + '%'
+      }
+      
+      // Sidebar toggle for mobile
+      const sidebarToggle = document.getElementById('sidebar-toggle')
+      const sidebar = document.querySelector('.sidebar')
+      if (sidebarToggle && sidebar) {
+        function toggleSidebar() {
+          const isOpen = sidebar.classList.contains('sidebar-open')
+          if (isOpen) {
+            sidebar.classList.remove('sidebar-open')
+            sidebarToggle.classList.remove('active')
+            document.body.classList.remove('sidebar-open')
+          } else {
+            sidebar.classList.add('sidebar-open')
+            sidebarToggle.classList.add('active')
+            document.body.classList.add('sidebar-open')
+          }
+        }
+        
+        sidebarToggle.addEventListener('click', (e) => {
+          e.stopPropagation()
+          toggleSidebar()
+        })
+        
+        // Close sidebar when clicking a link on mobile
+        const sidebarLinks = sidebar.querySelectorAll('.sidebar-link')
+        sidebarLinks.forEach(link => {
+          link.addEventListener('click', () => {
+            if (window.innerWidth <= 768) {
+              toggleSidebar()
+            }
+          })
+        })
+        
+        // Close sidebar when clicking outside (on overlay/background)
+        document.addEventListener('click', (e) => {
+          if (window.innerWidth <= 768 && sidebar.classList.contains('sidebar-open')) {
+            if (!sidebar.contains(e.target) && !sidebarToggle.contains(e.target)) {
+              toggleSidebar()
+            }
+          }
+        })
       }
       
       // Language toggle functionality
